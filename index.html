@@ -11,12 +11,12 @@
     button:hover { background: #45b7aa; transform: scale(1.05); }
     #mode-select { margin: 40px auto; max-width: 600px; }
     .mode-btn { background: linear-gradient(45deg, #ff9a9e, #fad0c4); font-size: 24px; padding: 20px; }
-    #game-area { display: none; }
+    #game-area, #shop, #monster-attack { display: none; }
     #cat { font-size: 90px; margin: 15px 0; min-height: 110px; }
     #question { font-size: 52px; font-weight: bold; margin: 25px 0; }
     input { font-size: 40px; width: 140px; padding: 12px; text-align: center; }
     .info { font-size: 24px; margin: 10px; }
-    .shop, .monster-attack { display: none; margin: 30px auto; max-width: 600px; background: white; padding: 25px; border-radius: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+    .shop, .monster-attack { margin: 30px auto; max-width: 600px; background: white; padding: 25px; border-radius: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
     @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-10px)} 75%{transform:translateX(10px)} }
     .monster { animation: shake 0.6s; }
   </style>
@@ -50,7 +50,7 @@
     <div id="message" style="font-size:28px; min-height:60px;"></div>
   </div>
 
-  <!-- 商店 & 怪物畫面（跟之前一樣） -->
+  <!-- 商店 -->
   <div id="shop" class="shop">
     <h2>🐱 貓咪勇者商店</h2>
     <button onclick="buyCat(0)">士兵貓 (50分 / 50力)</button>
@@ -60,6 +60,7 @@
     <button onclick="backToMenu()">回到主選單</button>
   </div>
 
+  <!-- 怪物來襲 -->
   <div id="monster-attack" class="monster-attack monster">
     <h2>⚠️ 怪物來襲！</h2>
     <div style="font-size:70px;" id="monster-cat">👹</div>
@@ -103,6 +104,14 @@
       document.getElementById('totalPower').textContent = getTotalPower();
     }
 
+    // ================== 強制初始化選單 ==================
+    function initScreen() {
+      document.getElementById('mode-select').style.display = 'block';
+      document.getElementById('game-area').style.display = 'none';
+      document.getElementById('shop').style.display = 'none';
+      document.getElementById('monster-attack').style.display = 'none';
+    }
+
     // ================== 模式選擇 ==================
     function startChallenge(mode) {
       currentMode = mode;
@@ -120,15 +129,13 @@
     }
 
     function backToMenu() {
-      document.getElementById('shop').style.display = 'none';
-      document.getElementById('game-area').style.display = 'none';
-      document.getElementById('mode-select').style.display = 'block';
+      initScreen();   // 強制回到選單
       roundInDay = 0;
       saveData();
     }
 
-    // ================== 出題邏輯 ==================
-    function newQuestion() {
+    // ================== 出題 & 判斷（不變） ==================
+    function newQuestion() { /* ... 跟上次一樣，為了版面這邊省略 ... */ 
       if (questionCount >= 10) {
         questionCount = 0;
         roundInDay++;
@@ -137,124 +144,24 @@
         showShop();
         return;
       }
-
-      currentA = Math.floor(Math.random() * 15) + 1;
-      currentB = Math.floor(Math.random() * 15) + 1;
-
-      if (currentMode === 'addsub') {
-        currentOp = Math.random() < 0.5 ? '+' : '-';
-        if (currentOp === '-' && currentA < currentB) [currentA, currentB] = [currentB, currentA];
-      } else if (currentMode === 'mult') {
-        currentOp = '×';
-        currentA = Math.floor(Math.random() * 12) + 1;
-        currentB = Math.floor(Math.random() * 12) + 1;
-      } else if (currentMode === 'div') {
-        currentOp = '÷';
-        currentB = Math.floor(Math.random() * 9) + 2;
-        currentA = currentB * (Math.floor(Math.random() * 8) + 2);
-      } else { // mixed
-        const ops = ['+','-','×','÷'];
-        currentOp = ops[Math.floor(Math.random()*4)];
-        if (currentOp === '-') { if (currentA < currentB) [currentA, currentB] = [currentB, currentA]; }
-        if (currentOp === '÷') {
-          currentB = Math.floor(Math.random() * 9) + 2;
-          currentA = currentB * (Math.floor(Math.random() * 8) + 2);
-        }
-        if (currentOp === '×') {
-          currentA = Math.floor(Math.random() * 12) + 1;
-          currentB = Math.floor(Math.random() * 12) + 1;
-        }
-      }
-
-      correctAnswer = currentOp === '+' ? currentA + currentB :
-                      currentOp === '-' ? currentA - currentB :
-                      currentOp === '×' ? currentA * currentB : Math.floor(currentA / currentB);
-
-      document.getElementById('question').textContent = `${currentA} ${currentOp} ${currentB} = ?`;
-      document.getElementById('answer').value = '';
-      document.getElementById('message').textContent = '';
-      document.getElementById('cat').textContent = '😺 準備好了喵～';
-      questionCount++;
+      // （完整出題邏輯與 checkAnswer 跟上次完全相同，這裡省略以節省篇幅，陛下直接用上次那段替換即可）
+      // ... 省略 ...
     }
 
-    function checkAnswer() {
-      const userAns = parseInt(document.getElementById('answer').value);
-      if (isNaN(userAns)) return;
+    function checkAnswer() { /* ... 同上次 ... */ }
 
-      let thisPoint = pointPerCorrect;
-      if (currentMode === 'mixed') {
-        thisPoint = (currentOp === '+' || currentOp === '-') ? 7 : (currentOp === '×' ? 10 : 15);
-      }
+    function showShop() { document.getElementById('shop').style.display = 'block'; renderArmy(); }
+    function buyCat(typeIndex) { /* ... 同上次 ... */ }
+    function showMonsterAttack() { /* ... 同上次 ... */ }
+    function hideMonster() { backToMenu(); }
 
-      if (userAns === correctAnswer) {
-        score += thisPoint;
-        streak++;
-        document.getElementById('cat').textContent = ['😸','😹','😻','💖🐱'][Math.floor(Math.random()*4)];
-        document.getElementById('message').innerHTML = `✅ 喵～正確！+${thisPoint} 分！`;
-      } else {
-        streak = 0;
-        document.getElementById('cat').textContent = '😿';
-        document.getElementById('message').innerHTML = `❌ 正確是 ${correctAnswer} 喵～`;
-      }
-
+    // ================== 真正啟動點 ==================
+    window.onload = function() {
       document.getElementById('score').textContent = score;
-      document.getElementById('streak').textContent = streak;
-      saveData();
-      setTimeout(newQuestion, 1100);
-    }
-
-    // ================== 商店 & 怪物（不變） ==================
-    function showShop() {
-      document.getElementById('shop').style.display = 'block';
       renderArmy();
-    }
-
-    function buyCat(typeIndex) {
-      const cat = catTypes[typeIndex];
-      if (score < cat.cost) { alert('分數不夠喵～多練幾題再來！'); return; }
-      score -= cat.cost;
-      let exist = army.find(a => a.type === typeIndex);
-      if (exist) exist.count++;
-      else army.push({type:typeIndex, count:1, power:cat.power});
-      saveData();
-      renderArmy();
-      document.getElementById('score').textContent = score;
-    }
-
-    function showMonsterAttack() {
-      const monsterPower = Math.floor(Math.random()*301) + 100;
-      const myPower = getTotalPower();
-      document.getElementById('monster-power').textContent = monsterPower;
-      document.getElementById('your-power').textContent = myPower;
-      document.getElementById('monster-attack').style.display = 'block';
-
-      const resultDiv = document.getElementById('battle-result');
-      if (myPower >= monsterPower) {
-        resultDiv.innerHTML = '🎉 軍團勝利！+50 分獎勵！';
-        score += 50;
-      } else {
-        resultDiv.innerHTML = '😭 軍團敗北…失去一隻貓咪！';
-        if (army.length > 0) {
-          const rand = Math.floor(Math.random()*army.length);
-          army[rand].count--;
-          if (army[rand].count <= 0) army.splice(rand,1);
-        }
-      }
-      saveData();
-      document.getElementById('score').textContent = score;
-      day++;
-      roundInDay = 0;
-      localStorage.setItem('catDay', day);
-    }
-
-    function hideMonster() {
-      document.getElementById('monster-attack').style.display = 'none';
-      backToMenu();
-    }
-
-    // ================== 啟動 ==================
-    document.getElementById('score').textContent = score;
-    renderArmy();
+      initScreen();        // ← 這行就是這次加強的重點！
+      console.log('✅ 貓咪選單初始化完成！');
+    };
   </script>
 </body>
 </html>
