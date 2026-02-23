@@ -15,10 +15,10 @@
     #cat { font-size: 90px; margin: 15px 0; min-height: 110px; }
     #question { font-size: 52px; font-weight: bold; margin: 25px 0; }
     input { font-size: 40px; width: 140px; padding: 12px; text-align: center; }
-    .info { font-size: 24px; margin: 10px; }
+    .info { font-size: 24px; margin: 10px; line-height: 1.5; }
     .shop, .monster-attack { margin: 30px auto; max-width: 600px; background: white; padding: 25px; border-radius: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
-    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-10px)} 75%{transform:translateX(10px)} }
-    .monster { animation: shake 0.6s; }
+    .boss { background: #ffebee; border: 4px solid #ef5350; animation: shake 0.6s; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-12px)} 75%{transform:translateX(12px)} }
   </style>
 </head>
 <body>
@@ -28,7 +28,7 @@
     <h1>🐱 貓咪異世界數學冒險！</h1>
     <h2>選擇你的挑戰模式喵～</h2>
     <button class="mode-btn" onclick="startChallenge('addsub')">加減法基礎訓練<br><small>每題 7 分</small></button>
-    <button class="mode-btn" onclick="startChallenge('mult')">乘法森林挑戰<br><small>每題 10 分</small></button>
+    <button class="mode-btn" onclick="startChallenge('mult')">乘法森林挑戰<br><small>九九乘法 每題 10 分</small></button>
     <button class="mode-btn" onclick="startChallenge('div')">除法魔王試煉<br><small>每題 15 分</small></button>
     <button class="mode-btn" onclick="startChallenge('mixed')">綜合生存戰<br><small>依題型給分</small></button>
   </div>
@@ -46,6 +46,9 @@
       <div>連擊：<span id="streak">0</span></div>
       <div>第 <span id="day">1</span> 天（已玩 <span id="round">0</span>/3 輪）</div>
       <div>軍團總戰力：<span id="totalPower">0</span></div>
+      <div style="color:#ef5350; font-weight:bold;">魔王軍團將在 <span id="bossCountdown">5</span> 天後來臨</div>
+      <div style="color:#ef5350;">預計戰力範圍：800 ~ 1600+</div>
+      <div style="color:#2ecc71; font-weight:bold;">目前軍團戰力：<span id="currentArmyPower">0</span></div>
     </div>
     <div id="message" style="font-size:28px; min-height:60px;"></div>
   </div>
@@ -60,12 +63,12 @@
     <button onclick="backToMenu()">回到主選單</button>
   </div>
 
-  <!-- 怪物來襲 -->
-  <div id="monster-attack" class="monster-attack monster">
-    <h2>⚠️ 怪物來襲！</h2>
-    <div style="font-size:70px;" id="monster-cat">👹</div>
-    <div>怪物戰力：<span id="monster-power" style="color:#ef5350;font-size:36px;">300</span></div>
-    <div>你的軍團總戰力：<span id="your-power" style="color:#4ecdc4;font-size:36px;">250</span></div>
+  <!-- 魔王軍團來襲 -->
+  <div id="monster-attack" class="monster-attack boss">
+    <h2>⚠️ 魔王軍團來襲！！</h2>
+    <div style="font-size:80px;" id="monster-cat">👹</div>
+    <div>魔王戰力：<span id="monster-power" style="color:#ef5350;font-size:36px;">1200</span></div>
+    <div>你的軍團總戰力：<span id="your-power" style="color:#4ecdc4;font-size:36px;">950</span></div>
     <div id="battle-result" style="margin:25px 0; font-size:30px; font-weight:bold;"></div>
     <button onclick="hideMonster()">繼續下一輪</button>
   </div>
@@ -76,6 +79,7 @@
     let army = JSON.parse(localStorage.getItem('catArmy')) || [];
     let day = parseInt(localStorage.getItem('catDay')) || 1;
     let roundInDay = parseInt(localStorage.getItem('catRound')) || 0;
+    let bossCountdown = parseInt(localStorage.getItem('bossCountdown')) || 5;
 
     const catTypes = [
       {name:'士兵貓', power:50, emoji:'🐱', cost:50},
@@ -91,6 +95,7 @@
       localStorage.setItem('catArmy', JSON.stringify(army));
       localStorage.setItem('catDay', day);
       localStorage.setItem('catRound', roundInDay);
+      localStorage.setItem('bossCountdown', bossCountdown);
     }
 
     function getTotalPower() {
@@ -101,10 +106,11 @@
       let html = '<strong>我的貓咪軍團：</strong><br>';
       army.forEach((c,i) => html += `${catTypes[i].emoji} ${catTypes[i].name} ×${c.count} (戰力 ${c.power*c.count})<br>`);
       document.getElementById('army-list').innerHTML = html || '還沒有貓咪使者…快去商店買吧！';
-      document.getElementById('totalPower').textContent = getTotalPower();
+      const power = getTotalPower();
+      document.getElementById('totalPower').textContent = power;
+      document.getElementById('currentArmyPower').textContent = power;
     }
 
-    // ================== 強制初始化選單 ==================
     function initScreen() {
       document.getElementById('mode-select').style.display = 'block';
       document.getElementById('game-area').style.display = 'none';
@@ -112,14 +118,13 @@
       document.getElementById('monster-attack').style.display = 'none';
     }
 
-    // ================== 模式選擇 ==================
     function startChallenge(mode) {
       currentMode = mode;
       document.getElementById('mode-select').style.display = 'none';
       document.getElementById('game-area').style.display = 'block';
       
       if (mode === 'addsub') { pointPerCorrect = 7; document.getElementById('mode-title').textContent = '加減法基礎訓練 (7分/題)'; }
-      else if (mode === 'mult') { pointPerCorrect = 10; document.getElementById('mode-title').textContent = '乘法森林挑戰 (10分/題)'; }
+      else if (mode === 'mult') { pointPerCorrect = 10; document.getElementById('mode-title').textContent = '乘法森林挑戰 (九九乘法 10分/題)'; }
       else if (mode === 'div') { pointPerCorrect = 15; document.getElementById('mode-title').textContent = '除法魔王試煉 (15分/題)'; }
       else { pointPerCorrect = 0; document.getElementById('mode-title').textContent = '綜合生存戰 (依題型給分)'; }
 
@@ -129,38 +134,151 @@
     }
 
     function backToMenu() {
-      initScreen();   // 強制回到選單
+      initScreen();
       roundInDay = 0;
       saveData();
     }
 
-    // ================== 出題 & 判斷（不變） ==================
-    function newQuestion() { /* ... 跟上次一樣，為了版面這邊省略 ... */ 
+    // ================== 出題邏輯（九九乘法不變） ==================
+    function newQuestion() {
       if (questionCount >= 10) {
         questionCount = 0;
         roundInDay++;
+        day++;
+        bossCountdown--;
         saveData();
-        if (roundInDay >= 3) { showMonsterAttack(); return; }
-        showShop();
+
+        if (bossCountdown <= 0) { showBossAttack(); return; }
+        if (roundInDay >= 3) { showShop(); return; }
+        newQuestion();
         return;
       }
-      // （完整出題邏輯與 checkAnswer 跟上次完全相同，這裡省略以節省篇幅，陛下直接用上次那段替換即可）
-      // ... 省略 ...
+
+      // （出題邏輯與之前完全相同，九九乘法、加減除混合皆保留）
+      currentA = Math.floor(Math.random() * 15) + 1;
+      currentB = Math.floor(Math.random() * 15) + 1;
+
+      if (currentMode === 'addsub') {
+        currentOp = Math.random() < 0.5 ? '+' : '-';
+        if (currentOp === '-' && currentA < currentB) [currentA, currentB] = [currentB, currentA];
+      } else if (currentMode === 'mult') {
+        currentA = Math.floor(Math.random() * 8) + 2;
+        currentB = Math.floor(Math.random() * 8) + 2;
+        currentOp = '×';
+      } else if (currentMode === 'div') {
+        currentOp = '÷';
+        currentB = Math.floor(Math.random() * 9) + 2;
+        currentA = currentB * (Math.floor(Math.random() * 8) + 2);
+      } else {
+        const ops = ['+','-','×','÷'];
+        currentOp = ops[Math.floor(Math.random()*4)];
+        if (currentOp === '-') { if (currentA < currentB) [currentA, currentB] = [currentB, currentA]; }
+        if (currentOp === '÷') {
+          currentB = Math.floor(Math.random() * 9) + 2;
+          currentA = currentB * (Math.floor(Math.random() * 8) + 2);
+        }
+        if (currentOp === '×') {
+          currentA = Math.floor(Math.random() * 8) + 2;
+          currentB = Math.floor(Math.random() * 8) + 2;
+        }
+      }
+
+      correctAnswer = currentOp === '+' ? currentA + currentB :
+                      currentOp === '-' ? currentA - currentB :
+                      currentOp === '×' ? currentA * currentB : Math.floor(currentA / currentB);
+
+      document.getElementById('question').textContent = `${currentA} ${currentOp} ${currentB} = ?`;
+      document.getElementById('answer').value = '';
+      document.getElementById('message').textContent = '';
+      document.getElementById('cat').textContent = '😺 準備好了喵～';
+      document.getElementById('bossCountdown').textContent = bossCountdown;
+      questionCount++;
     }
 
-    function checkAnswer() { /* ... 同上次 ... */ }
+    function checkAnswer() {
+      const userAns = parseInt(document.getElementById('answer').value);
+      if (isNaN(userAns)) return;
 
-    function showShop() { document.getElementById('shop').style.display = 'block'; renderArmy(); }
-    function buyCat(typeIndex) { /* ... 同上次 ... */ }
-    function showMonsterAttack() { /* ... 同上次 ... */ }
-    function hideMonster() { backToMenu(); }
+      let thisPoint = pointPerCorrect;
+      if (currentMode === 'mixed') {
+        thisPoint = (currentOp === '+' || currentOp === '-') ? 7 : (currentOp === '×' ? 10 : 15);
+      }
 
-    // ================== 真正啟動點 ==================
+      if (userAns === correctAnswer) {
+        score += thisPoint;
+        streak++;
+        document.getElementById('cat').textContent = ['😸','😹','😻','💖🐱'][Math.floor(Math.random()*4)];
+        document.getElementById('message').innerHTML = `✅ 喵～正確！+${thisPoint} 分！`;
+      } else {
+        streak = 0;
+        document.getElementById('cat').textContent = '😿';
+        document.getElementById('message').innerHTML = `❌ 正確是 ${correctAnswer} 喵～`;
+      }
+
+      document.getElementById('score').textContent = score;
+      document.getElementById('streak').textContent = streak;
+      saveData();
+      setTimeout(newQuestion, 1100);
+    }
+
+    function showShop() {
+      document.getElementById('shop').style.display = 'block';
+      renderArmy();
+    }
+
+    function buyCat(typeIndex) {
+      const cat = catTypes[typeIndex];
+      if (score < cat.cost) { alert('分數不夠喵～多練幾題！'); return; }
+      score -= cat.cost;
+      let exist = army.find(a => a.type === typeIndex);
+      if (exist) exist.count++;
+      else army.push({type:typeIndex, count:1, power:cat.power});
+      saveData();
+      renderArmy();
+      document.getElementById('score').textContent = score;
+    }
+
+    function showBossAttack() {
+      // 魔王戰力大幅倍增 + 隨天數變強
+      const baseMin = 800 + (day - 1) * 120;
+      const bossPower = Math.floor(Math.random() * 801) + baseMin; // 800~1600+ 且越來越強
+      const myPower = getTotalPower();
+      document.getElementById('monster-power').textContent = bossPower;
+      document.getElementById('your-power').textContent = myPower;
+      document.getElementById('monster-attack').style.display = 'block';
+
+      const resultDiv = document.getElementById('battle-result');
+      if (myPower >= bossPower) {
+        resultDiv.innerHTML = '🎉 軍團擊退魔王！+150 分獎勵！';
+        score += 150;
+      } else {
+        resultDiv.innerHTML = '😭 軍團敗北…失去一隻貓咪！';
+        if (army.length > 0) {
+          const rand = Math.floor(Math.random()*army.length);
+          army[rand].count--;
+          if (army[rand].count <= 0) army.splice(rand,1);
+        }
+      }
+      saveData();
+      document.getElementById('score').textContent = score;
+      bossCountdown = 5;
+      roundInDay = 0;
+      localStorage.setItem('bossCountdown', bossCountdown);
+    }
+
+    function hideMonster() {
+      document.getElementById('monster-attack').style.display = 'none';
+      backToMenu();
+    }
+
+    // ================== 啟動 ==================
     window.onload = function() {
       document.getElementById('score').textContent = score;
+      document.getElementById('day').textContent = day;
+      document.getElementById('bossCountdown').textContent = bossCountdown;
       renderArmy();
-      initScreen();        // ← 這行就是這次加強的重點！
-      console.log('✅ 貓咪選單初始化完成！');
+      initScreen();
+      console.log('✅ 魔王壓力拉滿版初始化完成！');
     };
   </script>
 </body>
