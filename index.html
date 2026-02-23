@@ -3,54 +3,69 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>貓咪異世界生存！喵～</title>
+  <title>貓咪異世界數學冒險！喵～</title>
   <style>
     body { font-family: system-ui; background: #f0f8ff; text-align: center; padding: 20px; margin: 0; color: #333; }
-    h1 { color: #ff6b6b; }
+    h1 { color: #ff6b6b; margin: 10px 0; }
+    button { font-size: 22px; padding: 15px 30px; margin: 12px; background: #4ecdc4; color: white; border: none; border-radius: 20px; cursor: pointer; width: 280px; }
+    button:hover { background: #45b7aa; transform: scale(1.05); }
+    #mode-select { margin: 40px auto; max-width: 600px; }
+    .mode-btn { background: linear-gradient(45deg, #ff9a9e, #fad0c4); font-size: 24px; padding: 20px; }
+    #game-area { display: none; }
     #cat { font-size: 90px; margin: 15px 0; min-height: 110px; }
     #question { font-size: 52px; font-weight: bold; margin: 25px 0; }
     input { font-size: 40px; width: 140px; padding: 12px; text-align: center; }
-    button { font-size: 22px; padding: 12px 28px; margin: 8px; background: #4ecdc4; color: white; border: none; border-radius: 15px; cursor: pointer; }
-    button:hover { background: #45b7aa; }
-    .shop { display: none; margin: 30px auto; max-width: 600px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-    .monster { background: #ffebee; border: 3px solid #ef5350; animation: shake 0.5s; }
-    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+    .info { font-size: 24px; margin: 10px; }
+    .shop, .monster-attack { display: none; margin: 30px auto; max-width: 600px; background: white; padding: 25px; border-radius: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-10px)} 75%{transform:translateX(10px)} }
+    .monster { animation: shake 0.6s; }
   </style>
 </head>
 <body>
 
-  <h1>貓咪異世界生存挑戰！喵～</h1>
-  <div id="cat">😺</div>
-  <div id="question"></div>
-  <input type="number" id="answer" placeholder="?" autocomplete="off"/>
-  <button onclick="checkAnswer()">送出答案</button>
-
-  <div id="info">
-    <div>分數：<span id="score">0</span></div>
-    <div>連擊：<span id="streak">0</span></div>
-    <div>第 <span id="day">1</span> 天（已玩 <span id="round">0</span>/3 輪）</div>
-    <div>軍團總戰力：<span id="totalPower">0</span></div>
+  <!-- 主選單 -->
+  <div id="mode-select">
+    <h1>🐱 貓咪異世界數學冒險！</h1>
+    <h2>選擇你的挑戰模式喵～</h2>
+    <button class="mode-btn" onclick="startChallenge('addsub')">加減法基礎訓練<br><small>每題 7 分</small></button>
+    <button class="mode-btn" onclick="startChallenge('mult')">乘法森林挑戰<br><small>每題 10 分</small></button>
+    <button class="mode-btn" onclick="startChallenge('div')">除法魔王試煉<br><small>每題 15 分</small></button>
+    <button class="mode-btn" onclick="startChallenge('mixed')">綜合生存戰<br><small>依題型給分</small></button>
   </div>
 
-  <div id="message"></div>
+  <!-- 遊戲畫面 -->
+  <div id="game-area">
+    <h1 id="mode-title">貓咪挑戰中...</h1>
+    <div id="cat">😺</div>
+    <div id="question"></div>
+    <input type="number" id="answer" placeholder="?" autocomplete="off"/>
+    <button onclick="checkAnswer()">送出答案</button>
 
-  <!-- 商店 -->
+    <div class="info">
+      <div>分數：<span id="score">0</span></div>
+      <div>連擊：<span id="streak">0</span></div>
+      <div>第 <span id="day">1</span> 天（已玩 <span id="round">0</span>/3 輪）</div>
+      <div>軍團總戰力：<span id="totalPower">0</span></div>
+    </div>
+    <div id="message" style="font-size:28px; min-height:60px;"></div>
+  </div>
+
+  <!-- 商店 & 怪物畫面（跟之前一樣） -->
   <div id="shop" class="shop">
     <h2>🐱 貓咪勇者商店</h2>
     <button onclick="buyCat(0)">士兵貓 (50分 / 50力)</button>
     <button onclick="buyCat(1)">隊長貓 (80分 / 100力)</button>
     <button onclick="buyCat(2)">將軍貓 (100分 / 150力)</button>
-    <div id="army-list" style="margin-top:20px; font-size:20px;"></div>
-    <button onclick="hideShop()">繼續冒險</button>
+    <div id="army-list" style="margin-top:25px; font-size:21px; line-height:1.6;"></div>
+    <button onclick="backToMenu()">回到主選單</button>
   </div>
 
-  <!-- 怪物來襲畫面 -->
-  <div id="monster-attack" style="display:none; margin:30px auto; padding:25px; background:#ffebee; border-radius:20px; max-width:500px;">
+  <div id="monster-attack" class="monster-attack monster">
     <h2>⚠️ 怪物來襲！</h2>
-    <div style="font-size:60px;" id="monster-cat">👹</div>
-    <div>怪物戰力：<span id="monster-power" style="color:#ef5350; font-size:32px;">300</span></div>
-    <div>你的軍團總戰力：<span id="your-power" style="color:#4ecdc4; font-size:32px;">250</span></div>
-    <div id="battle-result" style="margin-top:20px; font-size:28px;"></div>
+    <div style="font-size:70px;" id="monster-cat">👹</div>
+    <div>怪物戰力：<span id="monster-power" style="color:#ef5350;font-size:36px;">300</span></div>
+    <div>你的軍團總戰力：<span id="your-power" style="color:#4ecdc4;font-size:36px;">250</span></div>
+    <div id="battle-result" style="margin:25px 0; font-size:30px; font-weight:bold;"></div>
     <button onclick="hideMonster()">繼續下一輪</button>
   </div>
 
@@ -67,6 +82,9 @@
       {name:'將軍貓', power:150, emoji:'🦁', cost:100}
     ];
 
+    let currentMode = '', pointPerCorrect = 10, questionCount = 0, streak = 0;
+    let currentA, currentB, currentOp, correctAnswer;
+
     function saveData() {
       localStorage.setItem('catScore', score);
       localStorage.setItem('catArmy', JSON.stringify(army));
@@ -75,44 +93,77 @@
     }
 
     function getTotalPower() {
-      return army.reduce((sum, a) => sum + a.power * a.count, 0);
+      return army.reduce((sum, c) => sum + c.power * c.count, 0);
     }
 
     function renderArmy() {
       let html = '<strong>我的貓咪軍團：</strong><br>';
-      army.forEach((c, i) => {
-        html += `${catTypes[i].emoji} ${catTypes[i].name} × ${c.count} (戰力 ${c.power*c.count})<br>`;
-      });
+      army.forEach((c,i) => html += `${catTypes[i].emoji} ${catTypes[i].name} ×${c.count} (戰力 ${c.power*c.count})<br>`);
       document.getElementById('army-list').innerHTML = html || '還沒有貓咪使者…快去商店買吧！';
       document.getElementById('totalPower').textContent = getTotalPower();
     }
 
-    // ================== 遊戲核心 ==================
-    let questionCount = 0, currentA, currentB, currentOp, correctAnswer, streak = 0;
+    // ================== 模式選擇 ==================
+    function startChallenge(mode) {
+      currentMode = mode;
+      document.getElementById('mode-select').style.display = 'none';
+      document.getElementById('game-area').style.display = 'block';
+      
+      if (mode === 'addsub') { pointPerCorrect = 7; document.getElementById('mode-title').textContent = '加減法基礎訓練 (7分/題)'; }
+      else if (mode === 'mult') { pointPerCorrect = 10; document.getElementById('mode-title').textContent = '乘法森林挑戰 (10分/題)'; }
+      else if (mode === 'div') { pointPerCorrect = 15; document.getElementById('mode-title').textContent = '除法魔王試煉 (15分/題)'; }
+      else { pointPerCorrect = 0; document.getElementById('mode-title').textContent = '綜合生存戰 (依題型給分)'; }
 
+      questionCount = 0;
+      streak = 0;
+      newQuestion();
+    }
+
+    function backToMenu() {
+      document.getElementById('shop').style.display = 'none';
+      document.getElementById('game-area').style.display = 'none';
+      document.getElementById('mode-select').style.display = 'block';
+      roundInDay = 0;
+      saveData();
+    }
+
+    // ================== 出題邏輯 ==================
     function newQuestion() {
       if (questionCount >= 10) {
         questionCount = 0;
         roundInDay++;
         saveData();
-
-        if (roundInDay >= 3) {
-          showMonsterAttack();
-          return;
-        }
+        if (roundInDay >= 3) { showMonsterAttack(); return; }
         showShop();
         return;
       }
 
-      // 隨機出題（加減乘除混合）
-      currentA = Math.floor(Math.random()*15)+1;
-      currentB = Math.floor(Math.random()*15)+1;
-      const ops = ['+','-','×','÷'];
-      currentOp = ops[Math.floor(Math.random()*4)];
+      currentA = Math.floor(Math.random() * 15) + 1;
+      currentB = Math.floor(Math.random() * 15) + 1;
 
-      if (currentOp === '-') { if (currentA < currentB) [currentA, currentB] = [currentB, currentA]; }
-      if (currentOp === '÷') {
-        while (currentA % currentB !== 0) currentB = Math.floor(Math.random()*10)+1;
+      if (currentMode === 'addsub') {
+        currentOp = Math.random() < 0.5 ? '+' : '-';
+        if (currentOp === '-' && currentA < currentB) [currentA, currentB] = [currentB, currentA];
+      } else if (currentMode === 'mult') {
+        currentOp = '×';
+        currentA = Math.floor(Math.random() * 12) + 1;
+        currentB = Math.floor(Math.random() * 12) + 1;
+      } else if (currentMode === 'div') {
+        currentOp = '÷';
+        currentB = Math.floor(Math.random() * 9) + 2;
+        currentA = currentB * (Math.floor(Math.random() * 8) + 2);
+      } else { // mixed
+        const ops = ['+','-','×','÷'];
+        currentOp = ops[Math.floor(Math.random()*4)];
+        if (currentOp === '-') { if (currentA < currentB) [currentA, currentB] = [currentB, currentA]; }
+        if (currentOp === '÷') {
+          currentB = Math.floor(Math.random() * 9) + 2;
+          currentA = currentB * (Math.floor(Math.random() * 8) + 2);
+        }
+        if (currentOp === '×') {
+          currentA = Math.floor(Math.random() * 12) + 1;
+          currentB = Math.floor(Math.random() * 12) + 1;
+        }
       }
 
       correctAnswer = currentOp === '+' ? currentA + currentB :
@@ -130,11 +181,16 @@
       const userAns = parseInt(document.getElementById('answer').value);
       if (isNaN(userAns)) return;
 
+      let thisPoint = pointPerCorrect;
+      if (currentMode === 'mixed') {
+        thisPoint = (currentOp === '+' || currentOp === '-') ? 7 : (currentOp === '×' ? 10 : 15);
+      }
+
       if (userAns === correctAnswer) {
-        score += 10;
+        score += thisPoint;
         streak++;
         document.getElementById('cat').textContent = ['😸','😹','😻','💖🐱'][Math.floor(Math.random()*4)];
-        document.getElementById('message').innerHTML = '✅ 喵～正確！+10 分！';
+        document.getElementById('message').innerHTML = `✅ 喵～正確！+${thisPoint} 分！`;
       } else {
         streak = 0;
         document.getElementById('cat').textContent = '😿';
@@ -144,32 +200,22 @@
       document.getElementById('score').textContent = score;
       document.getElementById('streak').textContent = streak;
       saveData();
-      setTimeout(newQuestion, 1000);
+      setTimeout(newQuestion, 1100);
     }
 
-    // ================== 商店 & 怪物 ==================
+    // ================== 商店 & 怪物（不變） ==================
     function showShop() {
       document.getElementById('shop').style.display = 'block';
       renderArmy();
     }
-    function hideShop() {
-      document.getElementById('shop').style.display = 'none';
-      roundInDay = 0;
-      saveData();
-      newQuestion();
-    }
 
     function buyCat(typeIndex) {
       const cat = catTypes[typeIndex];
-      if (score < cat.cost) {
-        alert('分數不夠喔喵～多練習幾題再來！');
-        return;
-      }
+      if (score < cat.cost) { alert('分數不夠喵～多練幾題再來！'); return; }
       score -= cat.cost;
-      let existing = army.find(a => a.type === typeIndex);
-      if (existing) existing.count++;
-      else army.push({type: typeIndex, count:1, power:cat.power});
-      
+      let exist = army.find(a => a.type === typeIndex);
+      if (exist) exist.count++;
+      else army.push({type:typeIndex, count:1, power:cat.power});
       saveData();
       renderArmy();
       document.getElementById('score').textContent = score;
@@ -178,14 +224,13 @@
     function showMonsterAttack() {
       const monsterPower = Math.floor(Math.random()*301) + 100;
       const myPower = getTotalPower();
-      
       document.getElementById('monster-power').textContent = monsterPower;
       document.getElementById('your-power').textContent = myPower;
       document.getElementById('monster-attack').style.display = 'block';
 
       const resultDiv = document.getElementById('battle-result');
       if (myPower >= monsterPower) {
-        resultDiv.innerHTML = '🎉 軍團勝利！獲得 50 分獎勵！';
+        resultDiv.innerHTML = '🎉 軍團勝利！+50 分獎勵！';
         score += 50;
       } else {
         resultDiv.innerHTML = '😭 軍團敗北…失去一隻貓咪！';
@@ -204,14 +249,12 @@
 
     function hideMonster() {
       document.getElementById('monster-attack').style.display = 'none';
-      newQuestion();
+      backToMenu();
     }
 
     // ================== 啟動 ==================
     document.getElementById('score').textContent = score;
     renderArmy();
-    newQuestion();
-    document.getElementById('answer').focus();
   </script>
 </body>
 </html>
