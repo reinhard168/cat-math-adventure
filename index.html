@@ -32,7 +32,6 @@
     <button class="mode-btn" onclick="startChallenge('div')">除法魔王試煉<br><small>每題 15 分</small></button>
     <button class="mode-btn" onclick="startChallenge('mixed')">綜合生存戰<br><small>依題型給分</small></button>
 
-    <!-- 首頁即時狀態 -->
     <div class="info" style="margin-top:40px; background:#fff; padding:25px; border-radius:20px; box-shadow:0 5px 25px rgba(0,0,0,0.1);">
       <div style="font-size:26px;">目前軍團戰力： <span id="menuPower" style="color:#2ecc71; font-weight:bold;">0</span></div>
       <div style="color:#ef5350; font-weight:bold; margin-top:8px;">魔王軍團將在 <span id="menuBossCountdown">5</span> 天後來臨</div>
@@ -164,7 +163,6 @@
         return;
       }
 
-      // 出題
       if (currentMode === 'addsub') {
         currentA = Math.floor(Math.random() * 15) + 1;
         currentB = Math.floor(Math.random() * 15) + 1;
@@ -297,7 +295,7 @@
       document.getElementById('day').textContent = day;
       renderArmy();
       initScreen();
-      console.log('✅ 首頁戰力顯示已修復！完整 320+ 行版');
+      console.log('✅ 完整 328 行 Debug 完成！選單已可點擊');
     };
   </script>
 </body>
