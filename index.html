@@ -3,7 +3,7 @@
 ## 專案名稱：貓咪異世界數學冒險！喵～
 
 **最後更新日期**：2026-02-23  
-**版本**：V8 完整穩定版（商店顯示總分數 + 魔王得分生效 + 戰損戰力重新計算 + 隨時返回主選單 + 首頁快速魔王測試）  
+**版本**：V9 金幣系統完整版（分數改金幣 + 主選單/商店顯示金幣 + 魔王得分生效 + 戰損戰力正確計算 + 隨時返回主選單 + 首頁快速魔王測試）  
 **檔案結構**：單一 index.html，直接推 GitHub Pages  
 **記憶目的**：陛下直接 copy 裡面的 code 區塊即可使用，絕不再出錯
 
@@ -42,10 +42,10 @@
   <div id="mode-select">
     <h1>🐱 貓咪異世界數學冒險！</h1>
     <h2>選擇你的挑戰模式喵～</h2>
-    <button class="mode-btn" onclick="startChallenge('addsub')">加減法基礎訓練<br><small>每題 7 分</small></button>
-    <button class="mode-btn" onclick="startChallenge('mult')">乘法森林挑戰<br><small>九九乘法 每題 10 分</small></button>
-    <button class="mode-btn" onclick="startChallenge('div')">除法魔王試煉<br><small>每題 15 分</small></button>
-    <button class="mode-btn" onclick="startChallenge('mixed')">綜合生存戰<br><small>依題型給分</small></button>
+    <button class="mode-btn" onclick="startChallenge('addsub')">加減法基礎訓練<br><small>每題 7 金幣</small></button>
+    <button class="mode-btn" onclick="startChallenge('mult')">乘法森林挑戰<br><small>九九乘法 每題 10 金幣</small></button>
+    <button class="mode-btn" onclick="startChallenge('div')">除法魔王試煉<br><small>每題 15 金幣</small></button>
+    <button class="mode-btn" onclick="startChallenge('mixed')">綜合生存戰<br><small>依題型給金幣</small></button>
 
     <div style="margin:40px 0;">
       <button class="mode-btn" onclick="openShopFromMenu()" style="background:#ff9800;">🐱 勇者商店</button>
@@ -53,6 +53,7 @@
     </div>
 
     <div class="info" style="background:#fff; padding:25px; border-radius:20px; box-shadow:0 5px 25px rgba(0,0,0,0.1);">
+      <div style="font-size:26px;">現有金幣： <span id="menuGold" style="color:#ffd700; font-weight:bold;">0</span></div>
       <div style="font-size:26px;">目前軍團戰力： <span id="menuPower" style="color:#2ecc71; font-weight:bold;">0</span></div>
       <div style="color:#ef5350; font-weight:bold; margin-top:8px;">魔王軍團將在 <span id="menuBossCountdown">5</span> 天後來臨</div>
       <div style="color:#ef5350;">預計戰力：800 ~ 1600+</div>
@@ -69,7 +70,7 @@
 
     <div class="info">
       <div id="round-stats">本輪：0/10　正確 0/0 (0.0%)</div>
-      <div>分數：<span id="score">0</span></div>
+      <div>金幣：<span id="gold">0</span></div>
       <div>連擊：<span id="streak">0</span></div>
       <div>第 <span id="day">1</span> 天（已玩 <span id="round">0</span>/3 輪）</div>
       <div>軍團總戰力：<span id="totalPower">0</span></div>
@@ -89,10 +90,10 @@
   <!-- 貓咪商店 -->
   <div id="shop" class="shop">
     <h2>🐱 貓咪勇者商店</h2>
-    <div id="shop-score">您的總分： <span id="shop-score-value">0</span></div>
-    <button onclick="buyCat(0)">士兵貓 (50分 / 50力)</button>
-    <button onclick="buyCat(1)">隊長貓 (80分 / 100力)</button>
-    <button onclick="buyCat(2)">將軍貓 (100分 / 150力)</button>
+    <div id="shop-score">您的金幣： <span id="shop-gold-value">0</span></div>
+    <button onclick="buyCat(0)">士兵貓 (50金幣 / 50力)</button>
+    <button onclick="buyCat(1)">隊長貓 (80金幣 / 100力)</button>
+    <button onclick="buyCat(2)">將軍貓 (100金幣 / 150力)</button>
     <div id="army-list" style="margin-top:25px; font-size:21px; line-height:1.6;"></div>
     <button onclick="backToMenu()" style="background:#9c27b0;">返回主選單</button>
   </div>
@@ -108,7 +109,7 @@
   </div>
 
   <script>
-    let score = parseInt(localStorage.getItem('catScore')) || 0;
+    let gold = parseInt(localStorage.getItem('catGold')) || 0;  // 改用 gold 取代 score
     let army = JSON.parse(localStorage.getItem('catArmy')) || [];
     let day = parseInt(localStorage.getItem('catDay')) || 1;
     let roundInDay = parseInt(localStorage.getItem('catRound')) || 0;
@@ -126,7 +127,7 @@
     let currentA, currentB, currentOp, correctAnswer;
 
     function saveData() {
-      localStorage.setItem('catScore', score);
+      localStorage.setItem('catGold', gold);
       localStorage.setItem('catArmy', JSON.stringify(army));
       localStorage.setItem('catDay', day);
       localStorage.setItem('catRound', roundInDay);
@@ -147,7 +148,8 @@
       document.getElementById('currentArmyPower').textContent = power;
       document.getElementById('menuPower').textContent = power;
       document.getElementById('menuBossCountdown').textContent = bossCountdown;
-      console.log('戰損後戰力重新計算：', power);
+      document.getElementById('menuGold').textContent = gold;
+      document.getElementById('shop-gold-value').textContent = gold;
     }
 
     function initScreen() {
@@ -167,10 +169,10 @@
       document.getElementById('mode-select').style.display = 'none';
       document.getElementById('game-area').style.display = 'block';
       
-      if (mode === 'addsub') { pointPerCorrect = 7; document.getElementById('mode-title').textContent = '加減法基礎訓練 (7分/題)'; }
-      else if (mode === 'mult') { pointPerCorrect = 10; document.getElementById('mode-title').textContent = '乘法森林挑戰 (九九乘法 10分/題)'; }
-      else if (mode === 'div') { pointPerCorrect = 15; document.getElementById('mode-title').textContent = '除法魔王試煉 (15分/題)'; }
-      else { pointPerCorrect = 0; document.getElementById('mode-title').textContent = '綜合生存戰 (依題型給分)'; }
+      if (mode === 'addsub') { pointPerCorrect = 7; document.getElementById('mode-title').textContent = '加減法基礎訓練 (7金幣/題)'; }
+      else if (mode === 'mult') { pointPerCorrect = 10; document.getElementById('mode-title').textContent = '乘法森林挑戰 (九九乘法 10金幣/題)'; }
+      else if (mode === 'div') { pointPerCorrect = 15; document.getElementById('mode-title').textContent = '除法魔王試煉 (15金幣/題)'; }
+      else { pointPerCorrect = 0; document.getElementById('mode-title').textContent = '綜合生存戰 (依題型給金幣)'; }
 
       updateRoundStats();
       setTimeout(newQuestion, 150);
@@ -198,6 +200,7 @@
         return;
       }
 
+      // 出題邏輯（完整）
       if (currentMode === 'addsub') {
         currentA = Math.floor(Math.random() * 15) + 1;
         currentB = Math.floor(Math.random() * 15) + 1;
@@ -250,18 +253,18 @@
       }
 
       if (userAns === correctAnswer) {
-        score += thisPoint;
+        gold += thisPoint;  // 改成加金幣
         streak++;
         roundCorrect++;
         document.getElementById('cat').textContent = ['😸','😹','😻','💖🐱'][Math.floor(Math.random()*4)];
-        document.getElementById('message').innerHTML = `✅ 喵～正確！+${thisPoint} 分！`;
+        document.getElementById('message').innerHTML = `✅ 喵～正確！+${thisPoint} 金幣！`;
       } else {
         streak = 0;
         document.getElementById('cat').textContent = '😿';
         document.getElementById('message').innerHTML = `❌ 正確是 ${correctAnswer} 喵～`;
       }
 
-      document.getElementById('score').textContent = score;
+      document.getElementById('gold').textContent = gold;
       document.getElementById('streak').textContent = streak;
       saveData();
       updateRoundStats();
@@ -272,31 +275,31 @@
       document.getElementById('game-area').style.display = 'none';
       document.getElementById('shop').style.display = 'block';
       renderArmy();
-      document.getElementById('shop-score-value').textContent = score;
+      document.getElementById('shop-gold-value').textContent = gold;
     }
 
     function openShopFromMenu() {
       document.getElementById('mode-select').style.display = 'none';
       document.getElementById('shop').style.display = 'block';
       renderArmy();
-      document.getElementById('shop-score-value').textContent = score;
+      document.getElementById('shop-gold-value').textContent = gold;
     }
 
     function buyCat(typeIndex) {
       const cat = catTypes[typeIndex];
-      if (score < cat.cost) { alert('分數不夠喵～多練幾題！'); return; }
-      score -= cat.cost;
+      if (gold < cat.cost) { alert('金幣不夠喵～多練幾題！'); return; }
+      gold -= cat.cost;
       let exist = army.find(a => a.type === typeIndex);
       if (exist) exist.count++;
       else army.push({type:typeIndex, count:1, power:cat.power});
       saveData();
       renderArmy();
-      document.getElementById('score').textContent = score;
-      document.getElementById('shop-score-value').textContent = score;
+      document.getElementById('gold').textContent = gold;
+      document.getElementById('shop-gold-value').textContent = gold;
     }
 
     function quickBossFight() {
-      const input = prompt('輸入魔王戰力（預設 1200）：', '1200');
+      const input = prompt('輸入魔王軍團戰力（預設 1200）：', '1200');
       if (!input) return;
       const bossPower = parseInt(input);
       if (isNaN(bossPower)) { alert('請輸入數字！'); return; }
@@ -306,9 +309,9 @@
         result = '😭 軍團敗北！損失大量貓咪！';
         applyDamage(0.3 + Math.random() * 0.3);
       } else {
-        result = '🎉 擊退魔王！+150 分！';
-        score += 150;
-        document.getElementById('score').textContent = score;
+        result = '🎉 擊退魔王！+150 金幣！';
+        gold += 150;
+        document.getElementById('gold').textContent = gold;
         const ratio = Math.max(0, 1 - (myPower - bossPower) / 2000);
         const lossRate = 0.1 + ratio * 0.4;
         result += `\n但損失 ${Math.round(lossRate*100)}% 貓咪！`;
@@ -326,7 +329,7 @@
         cat.count = Math.max(0, cat.count - lose);
       });
       army = army.filter(cat => cat.count > 0);
-      console.log('戰損比例：', rate, ' 戰損後軍團：', army);
+      renderArmy();  // 戰損後立即重新計算並更新所有顯示
     }
 
     function hideMonster() {
@@ -335,11 +338,11 @@
     }
 
     window.onload = function() {
-      document.getElementById('score').textContent = score;
+      document.getElementById('gold').textContent = gold;
       document.getElementById('day').textContent = day;
       renderArmy();
       initScreen();
-      console.log('✅ V8 載入完成 - 商店總分數顯示 + 魔王得分生效 + 戰損戰力重新計算');
+      console.log('✅ V9 金幣系統載入完成 - 商店顯示金幣 + 主選單金幣 + 魔王得分生效');
     };
   </script>
 </body>
