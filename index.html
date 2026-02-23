@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>貓咪異世界生存！喵～</title>
+  <style>
+    body { font-family: system-ui; background: #f0f8ff; text-align: center; padding: 20px; margin: 0; color: #333; }
+    h1 { color: #ff6b6b; }
+    #cat { font-size: 90px; margin: 15px 0; min-height: 110px; }
+    #question { font-size: 52px; font-weight: bold; margin: 25px 0; }
+    input { font-size: 40px; width: 140px; padding: 12px; text-align: center; }
+    button { font-size: 22px; padding: 12px 28px; margin: 8px; background: #4ecdc4; color: white; border: none; border-radius: 15px; cursor: pointer; }
+    button:hover { background: #45b7aa; }
+    .shop { display: none; margin: 30px auto; max-width: 600px; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+    .monster { background: #ffebee; border: 3px solid #ef5350; animation: shake 0.5s; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+  </style>
+</head>
+<body>
+
+  <h1>貓咪異世界生存挑戰！喵～</h1>
+  <div id="cat">😺</div>
+  <div id="question"></div>
+  <input type="number" id="answer" placeholder="?" autocomplete="off"/>
+  <button onclick="checkAnswer()">送出答案</button>
+
+  <div id="info">
+    <div>分數：<span id="score">0</span></div>
+    <div>連擊：<span id="streak">0</span></div>
+    <div>第 <span id="day">1</span> 天（已玩 <span id="round">0</span>/3 輪）</div>
+    <div>軍團總戰力：<span id="totalPower">0</span></div>
+  </div>
+
+  <div id="message"></div>
+
+  <!-- 商店 -->
+  <div id="shop" class="shop">
+    <h2>🐱 貓咪勇者商店</h2>
+    <button onclick="buyCat(0)">士兵貓 (50分 / 50力)</button>
+    <button onclick="buyCat(1)">隊長貓 (80分 / 100力)</button>
+    <button onclick="buyCat(2)">將軍貓 (100分 / 150力)</button>
+    <div id="army-list" style="margin-top:20px; font-size:20px;"></div>
+    <button onclick="hideShop()">繼續冒險</button>
+  </div>
+
+  <!-- 怪物來襲畫面 -->
+  <div id="monster-attack" style="display:none; margin:30px auto; padding:25px; background:#ffebee; border-radius:20px; max-width:500px;">
+    <h2>⚠️ 怪物來襲！</h2>
+    <div style="font-size:60px;" id="monster-cat">👹</div>
+    <div>怪物戰力：<span id="monster-power" style="color:#ef5350; font-size:32px;">300</span></div>
+    <div>你的軍團總戰力：<span id="your-power" style="color:#4ecdc4; font-size:32px;">250</span></div>
+    <div id="battle-result" style="margin-top:20px; font-size:28px;"></div>
+    <button onclick="hideMonster()">繼續下一輪</button>
+  </div>
+
+  <script>
+    // ================== 資料持久化 ==================
+    let score = parseInt(localStorage.getItem('catScore')) || 0;
+    let army = JSON.parse(localStorage.getItem('catArmy')) || [];
+    let day = parseInt(localStorage.getItem('catDay')) || 1;
+    let roundInDay = parseInt(localStorage.getItem('catRound')) || 0;
+
+    const catTypes = [
+      {name:'士兵貓', power:50, emoji:'🐱', cost:50},
+      {name:'隊長貓', power:100, emoji:'🐈‍⬛', cost:80},
+      {name:'將軍貓', power:150, emoji:'🦁', cost:100}
+    ];
+
+    function saveData() {
+      localStorage.setItem('catScore', score);
+      localStorage.setItem('catArmy', JSON.stringify(army));
+      localStorage.setItem('catDay', day);
+      localStorage.setItem('catRound', roundInDay);
+    }
+
+    function getTotalPower() {
+      return army.reduce((sum, a) => sum + a.power * a.count, 0);
+    }
+
+    function renderArmy() {
+      let html = '<strong>我的貓咪軍團：</strong><br>';
+      army.forEach((c, i) => {
+        html += `${catTypes[i].emoji} ${catTypes[i].name} × ${c.count} (戰力 ${c.power*c.count})<br>`;
+      });
+      document.getElementById('army-list').innerHTML = html || '還沒有貓咪使者…快去商店買吧！';
+      document.getElementById('totalPower').textContent = getTotalPower();
+    }
+
+    // ================== 遊戲核心 ==================
+    let questionCount = 0, currentA, currentB, currentOp, correctAnswer, streak = 0;
+
+    function newQuestion() {
+      if (questionCount >= 10) {
+        questionCount = 0;
+        roundInDay++;
+        saveData();
+
+        if (roundInDay >= 3) {
+          showMonsterAttack();
+          return;
+        }
+        showShop();
+        return;
+      }
+
+      // 隨機出題（加減乘除混合）
+      currentA = Math.floor(Math.random()*15)+1;
+      currentB = Math.floor(Math.random()*15)+1;
+      const ops = ['+','-','×','÷'];
+      currentOp = ops[Math.floor(Math.random()*4)];
+
+      if (currentOp === '-') { if (currentA < currentB) [currentA, currentB] = [currentB, currentA]; }
+      if (currentOp === '÷') {
+        while (currentA % currentB !== 0) currentB = Math.floor(Math.random()*10)+1;
+      }
+
+      correctAnswer = currentOp === '+' ? currentA + currentB :
+                      currentOp === '-' ? currentA - currentB :
+                      currentOp === '×' ? currentA * currentB : Math.floor(currentA / currentB);
+
+      document.getElementById('question').textContent = `${currentA} ${currentOp} ${currentB} = ?`;
+      document.getElementById('answer').value = '';
+      document.getElementById('message').textContent = '';
+      document.getElementById('cat').textContent = '😺 準備好了喵～';
+      questionCount++;
+    }
+
+    function checkAnswer() {
+      const userAns = parseInt(document.getElementById('answer').value);
+      if (isNaN(userAns)) return;
+
+      if (userAns === correctAnswer) {
+        score += 10;
+        streak++;
+        document.getElementById('cat').textContent = ['😸','😹','😻','💖🐱'][Math.floor(Math.random()*4)];
+        document.getElementById('message').innerHTML = '✅ 喵～正確！+10 分！';
+      } else {
+        streak = 0;
+        document.getElementById('cat').textContent = '😿';
+        document.getElementById('message').innerHTML = `❌ 正確是 ${correctAnswer} 喵～`;
+      }
+
+      document.getElementById('score').textContent = score;
+      document.getElementById('streak').textContent = streak;
+      saveData();
+      setTimeout(newQuestion, 1000);
+    }
+
+    // ================== 商店 & 怪物 ==================
+    function showShop() {
+      document.getElementById('shop').style.display = 'block';
+      renderArmy();
+    }
+    function hideShop() {
+      document.getElementById('shop').style.display = 'none';
+      roundInDay = 0;
+      saveData();
+      newQuestion();
+    }
+
+    function buyCat(typeIndex) {
+      const cat = catTypes[typeIndex];
+      if (score < cat.cost) {
+        alert('分數不夠喔喵～多練習幾題再來！');
+        return;
+      }
+      score -= cat.cost;
+      let existing = army.find(a => a.type === typeIndex);
+      if (existing) existing.count++;
+      else army.push({type: typeIndex, count:1, power:cat.power});
+      
+      saveData();
+      renderArmy();
+      document.getElementById('score').textContent = score;
+    }
+
+    function showMonsterAttack() {
+      const monsterPower = Math.floor(Math.random()*301) + 100;
+      const myPower = getTotalPower();
+      
+      document.getElementById('monster-power').textContent = monsterPower;
+      document.getElementById('your-power').textContent = myPower;
+      document.getElementById('monster-attack').style.display = 'block';
+
+      const resultDiv = document.getElementById('battle-result');
+      if (myPower >= monsterPower) {
+        resultDiv.innerHTML = '🎉 軍團勝利！獲得 50 分獎勵！';
+        score += 50;
+      } else {
+        resultDiv.innerHTML = '😭 軍團敗北…失去一隻貓咪！';
+        if (army.length > 0) {
+          const rand = Math.floor(Math.random()*army.length);
+          army[rand].count--;
+          if (army[rand].count <= 0) army.splice(rand,1);
+        }
+      }
+      saveData();
+      document.getElementById('score').textContent = score;
+      day++;
+      roundInDay = 0;
+      localStorage.setItem('catDay', day);
+    }
+
+    function hideMonster() {
+      document.getElementById('monster-attack').style.display = 'none';
+      newQuestion();
+    }
+
+    // ================== 啟動 ==================
+    document.getElementById('score').textContent = score;
+    renderArmy();
+    newQuestion();
+    document.getElementById('answer').focus();
+  </script>
+</body>
+</html>
