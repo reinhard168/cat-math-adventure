@@ -1,3 +1,15 @@
+# Wisely_MEMORY.md
+
+## 專案名稱：貓咪異世界數學冒險！喵～
+
+**最後更新日期**：2026-02-23  
+**版本**：V8 完整穩定版（商店顯示總分數 + 魔王得分生效 + 戰損戰力重新計算 + 隨時返回主選單 + 首頁快速魔王測試）  
+**檔案結構**：單一 index.html，直接推 GitHub Pages  
+**記憶目的**：陛下直接 copy 裡面的 code 區塊即可使用，絕不再出錯
+
+### 完整程式碼（直接複製下面全部存成 index.html）
+
+```html
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -21,6 +33,7 @@
     .boss { background: #ffebee; border: 4px solid #ef5350; animation: shake 0.6s; }
     @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-12px)} 75%{transform:translateX(12px)} }
     #round-stats { font-size: 26px; color: #2ecc71; font-weight: bold; margin: 15px 0; }
+    #shop-score { font-size: 28px; color: #4ecdc4; font-weight: bold; margin: 15px 0; }
   </style>
 </head>
 <body>
@@ -76,6 +89,7 @@
   <!-- 貓咪商店 -->
   <div id="shop" class="shop">
     <h2>🐱 貓咪勇者商店</h2>
+    <div id="shop-score">您的總分： <span id="shop-score-value">0</span></div>
     <button onclick="buyCat(0)">士兵貓 (50分 / 50力)</button>
     <button onclick="buyCat(1)">隊長貓 (80分 / 100力)</button>
     <button onclick="buyCat(2)">將軍貓 (100分 / 150力)</button>
@@ -83,7 +97,7 @@
     <button onclick="backToMenu()" style="background:#9c27b0;">返回主選單</button>
   </div>
 
-  <!-- 魔王來襲（暫時保留，未來擴充） -->
+  <!-- 魔王來襲 -->
   <div id="monster-attack" class="monster-attack boss">
     <h2>⚠️ 魔王軍團來襲！！</h2>
     <div style="font-size:80px;" id="monster-cat">👹</div>
@@ -133,6 +147,7 @@
       document.getElementById('currentArmyPower').textContent = power;
       document.getElementById('menuPower').textContent = power;
       document.getElementById('menuBossCountdown').textContent = bossCountdown;
+      console.log('戰損後戰力重新計算：', power);
     }
 
     function initScreen() {
@@ -257,12 +272,14 @@
       document.getElementById('game-area').style.display = 'none';
       document.getElementById('shop').style.display = 'block';
       renderArmy();
+      document.getElementById('shop-score-value').textContent = score;
     }
 
     function openShopFromMenu() {
       document.getElementById('mode-select').style.display = 'none';
       document.getElementById('shop').style.display = 'block';
       renderArmy();
+      document.getElementById('shop-score-value').textContent = score;
     }
 
     function buyCat(typeIndex) {
@@ -275,10 +292,11 @@
       saveData();
       renderArmy();
       document.getElementById('score').textContent = score;
+      document.getElementById('shop-score-value').textContent = score;
     }
 
     function quickBossFight() {
-      const input = prompt('輸入魔王軍團戰力（預設 1200）：', '1200');
+      const input = prompt('輸入魔王戰力（預設 1200）：', '1200');
       if (!input) return;
       const bossPower = parseInt(input);
       if (isNaN(bossPower)) { alert('請輸入數字！'); return; }
@@ -290,6 +308,7 @@
       } else {
         result = '🎉 擊退魔王！+150 分！';
         score += 150;
+        document.getElementById('score').textContent = score;
         const ratio = Math.max(0, 1 - (myPower - bossPower) / 2000);
         const lossRate = 0.1 + ratio * 0.4;
         result += `\n但損失 ${Math.round(lossRate*100)}% 貓咪！`;
@@ -307,6 +326,7 @@
         cat.count = Math.max(0, cat.count - lose);
       });
       army = army.filter(cat => cat.count > 0);
+      console.log('戰損比例：', rate, ' 戰損後軍團：', army);
     }
 
     function hideMonster() {
@@ -319,7 +339,7 @@
       document.getElementById('day').textContent = day;
       renderArmy();
       initScreen();
-      console.log('✅ V8 載入完成 - 主選單快速魔王 + 遊戲中隨時回主選單');
+      console.log('✅ V8 載入完成 - 商店總分數顯示 + 魔王得分生效 + 戰損戰力重新計算');
     };
   </script>
 </body>
