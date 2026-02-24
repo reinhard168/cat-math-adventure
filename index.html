@@ -437,7 +437,7 @@
     gold += 300;
 
     // 贏了也扣一點戰力（疲勞消耗）
-    dmg = Math.floor(myMax * 0.08);  // 約 8% Max 戰力
+    dmg = Math.floor(bossPower - myActual) * 0.2);  // 約 20% Max 戰力
     resultHTML += `<br>戰鬥消耗：-${dmg} 戰力（貓咪有點累了...）`;
   } else {
     resultHTML = '<span style="color:#ef5350">😭 軍團暫時敗退！</span>';
@@ -448,6 +448,10 @@
   // 統一扣血（贏輸都扣）
   catActualPower = Math.max(0, catActualPower - dmg);
 
+ // 戰後剩餘戰力顯示（重點！）
+  const myActualAfter = getLegionActual();
+  resultHTML += `<br><br><span style="color:#ff6b6b; font-size:28px; font-weight:bold;">戰後軍團剩餘戰力：${myActualAfter} / ${myMax}</span>`;
+    
   document.getElementById('battle-result').innerHTML = resultHTML;
   saveData();
   updateAllPowerUI();
