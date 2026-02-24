@@ -173,28 +173,18 @@
     }
 
     function newQuestion() {
-      if (questionCount >= 10) {
-        questionCount = 0; roundInDay++; day++; bossCountdown--;
-        saveData(); showShop(); return;
-      }
+      if (questionCount >= 10) { questionCount = 0; roundInDay++; day++; bossCountdown--; saveData(); showShop(); return; }
       if (currentMode === 'addsub') {
-        currentA = Math.floor(Math.random() * 15) + 1;
-        currentB = Math.floor(Math.random() * 15) + 1;
+        currentA = Math.floor(Math.random() * 15) + 1; currentB = Math.floor(Math.random() * 15) + 1;
         currentOp = Math.random() < 0.5 ? '+' : '-';
         if (currentOp === '-' && currentA < currentB) [currentA, currentB] = [currentB, currentA];
       } else if (currentMode === 'mult') {
-        currentA = Math.floor(Math.random() * 8) + 2;
-        currentB = Math.floor(Math.random() * 8) + 2;
-        currentOp = '×';
+        currentA = Math.floor(Math.random() * 8) + 2; currentB = Math.floor(Math.random() * 8) + 2; currentOp = '×';
       } else if (currentMode === 'div') {
-        currentB = Math.floor(Math.random() * 9) + 2;
-        currentA = currentB * (Math.floor(Math.random() * 8) + 2);
-        currentOp = '÷';
+        currentB = Math.floor(Math.random() * 9) + 2; currentA = currentB * (Math.floor(Math.random() * 8) + 2); currentOp = '÷';
       } else {
-        const ops = ['+','-','×','÷'];
-        currentOp = ops[Math.floor(Math.random()*4)];
-        currentA = Math.floor(Math.random() * 15) + 1;
-        currentB = Math.floor(Math.random() * 15) + 1;
+        const ops = ['+','-','×','÷']; currentOp = ops[Math.floor(Math.random()*4)];
+        currentA = Math.floor(Math.random() * 15) + 1; currentB = Math.floor(Math.random() * 15) + 1;
         if (currentOp === '-') { if (currentA < currentB) [currentA, currentB] = [currentB, currentA]; }
         if (currentOp === '÷') { currentB = Math.floor(Math.random() * 9) + 2; currentA = currentB * (Math.floor(Math.random() * 8) + 2); }
         if (currentOp === '×') { currentA = Math.floor(Math.random() * 8) + 2; currentB = Math.floor(Math.random() * 8) + 2; }
@@ -218,10 +208,10 @@
       questionTimer = setTimeout(() => {
         clearInterval(timerInterval);
         gold += currentQuestionPoint;
+        document.getElementById('gold').textContent = gold;
         streak = 0;
         document.getElementById('cat').textContent = '😿';
         document.getElementById('message').innerHTML = `⏰ 時間到！還是給你原分 ${currentQuestionPoint} 金幣！正確是 ${correctAnswer} 喵～`;
-        document.getElementById('gold').textContent = gold;
         saveData(); updateRoundStats(); updateAllPowerUI();
         setTimeout(newQuestion, 1100);
       }, 5000);
@@ -274,6 +264,7 @@
       let exist = army.find(a => a.type === typeIndex);
       if (exist) exist.count++;
       else army.push({type:typeIndex, count:1, power:cat.power});
+      catActualPower = Math.min(getTotalPower(), catActualPower + cat.power);  // ← Bug 1 修復重點
       saveData(); renderArmy();
       document.getElementById('gold').textContent = gold;
       document.getElementById('shop-gold-value').textContent = gold;
@@ -327,7 +318,7 @@
       document.getElementById('gold').textContent = gold;
       document.getElementById('day').textContent = day;
       syncCatPower(); renderArmy(); initScreen();
-      console.log('✅ V14 完整無 placeholder 最終版載入完成！');
+      console.log('✅ V15 實際戰力買貓即加 + 時間到給原分版載入完成！');
     };
   </script>
 </body>
