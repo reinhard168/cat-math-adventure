@@ -414,8 +414,8 @@
   const bossPower = parseInt(input);
   if (isNaN(bossPower)) { alert('請輸入數字！'); return; }
 
-  const myActual = getLegionActual();
-  const myMax = getLegionMax();
+  const myActualBefore = getLegionActual();   // 戰前實際戰力
+  const myMax = getLegionMax();               // Max 戰力
 
   document.getElementById('mode-select').style.display = 'none';
   document.getElementById('game-area').style.display = 'none';
@@ -423,40 +423,45 @@
   document.getElementById('monster-attack').style.display = 'block';
 
   document.getElementById('monster-power').textContent = bossPower;
-  document.getElementById('your-power').textContent = myActual;
+  document.getElementById('your-power').textContent = myActualBefore;
 
   let resultHTML = '';
   let dmg = 0;
 
-  if (myActual >= bossPower) {
-    resultHTML = '<span style="color:#2ecc71">🎉 擊敗魔王軍團！</span>';
+  if (myActualBefore >= bossPower) {
+    // ====================== 贏的時候 ======================
+    resultHTML = '<span style="color:#2ecc71; font-size:32px;">🎉 擊敗魔王軍團！</span>';
+
+    // 抽寶物 + 金幣
     const randomIndex = Math.floor(Math.random() * holyTreasures.length);
     const item = holyTreasures[randomIndex];
     treasureCounts[item.name] = (treasureCounts[item.name] || 0) + 1;
     resultHTML += `<br><br>獲得【${item.name}】！ +${item.power} 戰力<br>已擁有 ${treasureCounts[item.name]} 件`;
     gold += 300;
 
-    // 贏了也扣一點戰力（疲勞消耗）
-    dmg = Math.floor(bossPower - myActual) * 0.2);  // 約 20% Max 戰力
-    resultHTML += `<br>戰鬥消耗：-${dmg} 戰力（貓咪有點累了...）`;
+    // 【核心新公式】越接近越慘重
+    const closeness = Math.min(1, bossPower / myActualBefore);   // 0.0 ~ 1.0，越接近1越慘
+    dmg = Math.floor(myMax * (0.05 + closeness * 0.18));        // 5% ~ 23% Max 戰力
+    resultHTML += `<br>戰鬥消耗：-${dmg} 戰力（勢均力敵，打得超慘…）`;
+
   } else {
-    resultHTML = '<span style="color:#ef5350">😭 軍團暫時敗退！</span>';
-    dmg = Math.floor((bossPower - myActual) * 0.6);
+    // ====================== 輸的時候 ======================
+    resultHTML = '<span style="color:#ef5350; font-size:32px;">😭 軍團暫時敗退！</span>';
+    dmg = Math.floor((bossPower - myActualBefore) * 0.65);       // 輸更痛
     resultHTML += `<br>戰鬥損傷：-${dmg} 戰力`;
   }
 
-  // 統一扣血（贏輸都扣）
+  // 統一扣血
   catActualPower = Math.max(0, catActualPower - dmg);
 
- // 戰後剩餘戰力顯示（重點！）
+  // 戰後剩餘戰力（紅色大字，永遠顯示）
   const myActualAfter = getLegionActual();
   resultHTML += `<br><br><span style="color:#ff6b6b; font-size:28px; font-weight:bold;">戰後軍團剩餘戰力：${myActualAfter} / ${myMax}</span>`;
-    
+
   document.getElementById('battle-result').innerHTML = resultHTML;
   saveData();
   updateAllPowerUI();
 }
-
     function hideMonster() {
       document.getElementById('monster-attack').style.display = 'none';
       backToMenu();
