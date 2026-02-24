@@ -25,7 +25,6 @@
   </style>
 </head>
 <body>
-
   <!-- 主選單 -->
   <div id="mode-select">
     <h1>🐱 貓咪異世界數學冒險！</h1>
@@ -34,15 +33,14 @@
     <button class="mode-btn" onclick="startChallenge('mult')">乘法森林挑戰<br><small>九九乘法 每題 10 金幣</small></button>
     <button class="mode-btn" onclick="startChallenge('div')">除法魔王試煉<br><small>每題 15 金幣</small></button>
     <button class="mode-btn" onclick="startChallenge('mixed')">綜合生存戰<br><small>依題型給金幣</small></button>
-
     <div style="margin:40px 0;">
       <button class="mode-btn" onclick="openShopFromMenu()" style="background:#ff9800;">🐱 勇者商店</button>
       <button class="mode-btn" onclick="quickBossFight()" style="background:#e91e63;">⚔️ 挑戰魔王軍團（手動輸入戰力）</button>
     </div>
-
     <div class="info" style="background:#fff; padding:25px; border-radius:20px; box-shadow:0 5px 25px rgba(0,0,0,0.1);">
       <div style="font-size:26px;">現有金幣： <span id="menuGold" style="color:#ffd700; font-weight:bold;">0</span></div>
       <div style="font-size:26px;">目前軍團戰力： <span id="menuPower" style="color:#2ecc71; font-weight:bold;">0</span></div>
+      <div style="color:#9c27b0; font-weight:bold; font-size:26px;">聖物加成： +<span id="menuTreasure">0</span></div>
       <div style="color:#ef5350; font-weight:bold; margin-top:8px;">魔王軍團將在 <span id="menuBossCountdown">5</span> 天後來臨</div>
       <div style="color:#ef5350;">預計戰力：800 ~ 1600+</div>
     </div>
@@ -55,7 +53,6 @@
     <div id="question">準備出題中...</div>
     <input type="number" id="answer" placeholder="?" autocomplete="off"/>
     <button onclick="checkAnswer()">送出答案</button>
-
     <div class="info">
       <div id="round-stats">本輪：0/10　正確 0/0 (0.0%)</div>
       <div>金幣：<span id="gold">0</span></div>
@@ -65,13 +62,12 @@
       <div style="color:#ef5350; font-weight:bold;">魔王軍團將在 <span id="bossCountdown">5</span> 天後來臨</div>
       <div style="color:#ef5350;">預計戰力範圍：800 ~ 1600+</div>
       <div style="color:#2ecc71; font-weight:bold;">目前軍團戰力：<span id="currentArmyPower">0</span></div>
+      <div style="color:#9c27b0; font-weight:bold;">聖物加成： +<span id="treasureBonusDisplay">0</span></div>
     </div>
-
     <div style="margin:20px 0;">
       <button class="small-btn" onclick="showShop()" style="background:#ff9800;">🐱 開啟勇者商店</button>
       <button class="small-btn" onclick="backToMenu()" style="background:#9c27b0;">🏠 返回主選單</button>
     </div>
-
     <div id="message" style="font-size:28px; min-height:60px;"></div>
   </div>
 
@@ -86,7 +82,7 @@
     <button onclick="backToMenu()" style="background:#9c27b0;">返回主選單</button>
   </div>
 
-  <!-- 魔王來襲 -->
+  <!-- 魔王來襲（保留原畫面，quickBossFight 用 alert） -->
   <div id="monster-attack" class="monster-attack boss">
     <h2>⚠️ 魔王軍團來襲！！</h2>
     <div style="font-size:80px;" id="monster-cat">👹</div>
@@ -104,15 +100,26 @@
     let bossCountdown = parseInt(localStorage.getItem('bossCountdown')) || 5;
     let roundCorrect = 0;
     let roundTotal = 0;
-
     const catTypes = [
       {name:'士兵貓', power:50, emoji:'🐱', cost:50},
       {name:'隊長貓', power:100, emoji:'🐈‍⬛', cost:80},
       {name:'將軍貓', power:150, emoji:'🦁', cost:100}
     ];
-
     let currentMode = '', pointPerCorrect = 10, questionCount = 0, streak = 0;
     let currentA, currentB, currentOp, correctAnswer;
+
+    // ===== 新增核心變數（Single Source of Truth）=====
+    let catActualPower = parseInt(localStorage.getItem('catActualPower')) || 0;
+    let treasureCounts = JSON.parse(localStorage.getItem('treasureCounts')) || {
+      "聖劍": 0, "聖槍": 0, "聖弓": 0, "聖盾": 0, "聖刀": 0
+    };
+    const holyTreasures = [
+      { name: "聖劍", power: 1500 },
+      { name: "聖槍", power: 1000 },
+      { name: "聖弓", power: 900 },
+      { name: "聖盾", power: 600 },
+      { name: "聖刀", power: 700 }
+    ];
 
     function saveData() {
       localStorage.setItem('catGold', gold);
@@ -120,24 +127,51 @@
       localStorage.setItem('catDay', day);
       localStorage.setItem('catRound', roundInDay);
       localStorage.setItem('bossCountdown', bossCountdown);
+      localStorage.setItem('catActualPower', catActualPower);
+      localStorage.setItem('treasureCounts', JSON.stringify(treasureCounts));
     }
 
-    function getTotalPower() {
+    function getTotalPower() { // 純貓咪戰力（用於 army-list）
       return army.reduce((sum, c) => sum + c.power * c.count, 0);
+    }
+
+    function calculateTreasureBonus() {
+      return holyTreasures.reduce((sum, item) => {
+        return sum + ((treasureCounts[item.name] || 0) * item.power);
+      }, 0);
+    }
+
+    function getLegionMax() {
+      return getTotalPower() + calculateTreasureBonus();
+    }
+
+    function getLegionActual() {
+      return Math.max(0, catActualPower + calculateTreasureBonus());
+    }
+
+    function syncCatPower() {
+      const maxP = getTotalPower();
+      catActualPower = Math.min(maxP, Math.max(0, catActualPower));
+    }
+
+    function updateAllPowerUI() {
+      const tBonus = calculateTreasureBonus();
+      const legionMax = getLegionMax();
+      const legionAct = getLegionActual();
+      document.getElementById('totalPower').textContent = legionMax;
+      document.getElementById('currentArmyPower').textContent = legionAct;
+      document.getElementById('menuPower').textContent = legionAct;
+      document.getElementById('menuTreasure').textContent = tBonus;
+      const td = document.getElementById('treasureBonusDisplay');
+      if (td) td.textContent = tBonus;
     }
 
     function renderArmy() {
       let html = '<strong>我的貓咪軍團：</strong><br>';
       army.forEach((c,i) => html += `${catTypes[i].emoji} ${catTypes[i].name} ×${c.count} (戰力 ${c.power*c.count})<br>`);
       document.getElementById('army-list').innerHTML = html || '還沒有貓咪使者…快去商店買吧！';
-
-      const power = getTotalPower();
-      document.getElementById('totalPower').textContent = power;
-      document.getElementById('currentArmyPower').textContent = power;
-      document.getElementById('menuPower').textContent = power;
-      document.getElementById('menuBossCountdown').textContent = bossCountdown;
-      document.getElementById('menuGold').textContent = gold;
-      document.getElementById('shop-gold-value').textContent = gold;
+      syncCatPower();
+      updateAllPowerUI();
     }
 
     function initScreen() {
@@ -148,7 +182,7 @@
       renderArmy();
     }
 
-    function startChallenge(mode) {
+    function startChallenge(mode) { /* 原有程式碼不變 */ 
       currentMode = mode;
       roundCorrect = 0;
       roundTotal = 0;
@@ -156,28 +190,26 @@
       streak = 0;
       document.getElementById('mode-select').style.display = 'none';
       document.getElementById('game-area').style.display = 'block';
-      
       if (mode === 'addsub') { pointPerCorrect = 7; document.getElementById('mode-title').textContent = '加減法基礎訓練 (7金幣/題)'; }
       else if (mode === 'mult') { pointPerCorrect = 10; document.getElementById('mode-title').textContent = '乘法森林挑戰 (九九乘法 10金幣/題)'; }
       else if (mode === 'div') { pointPerCorrect = 15; document.getElementById('mode-title').textContent = '除法魔王試煉 (15金幣/題)'; }
       else { pointPerCorrect = 0; document.getElementById('mode-title').textContent = '綜合生存戰 (依題型給金幣)'; }
-
       updateRoundStats();
       setTimeout(newQuestion, 150);
     }
 
-    function updateRoundStats() {
+    function updateRoundStats() { /* 原有程式碼不變 */ 
       const rate = roundTotal > 0 ? (roundCorrect / roundTotal * 100).toFixed(1) : 0;
       document.getElementById('round-stats').textContent = `本輪：${roundTotal}/10　正確 ${roundCorrect}/${roundTotal} (${rate}%)`;
     }
 
-    function backToMenu() {
+    function backToMenu() { /* 原有程式碼不變 */ 
       initScreen();
       roundInDay = 0;
       saveData();
     }
 
-    function newQuestion() {
+    function newQuestion() { /* 原有程式碼不變 */ 
       if (questionCount >= 10) {
         questionCount = 0;
         roundInDay++;
@@ -187,7 +219,7 @@
         showShop();
         return;
       }
-
+      // ... (加減乘除出題邏輯完全不變)
       if (currentMode === 'addsub') {
         currentA = Math.floor(Math.random() * 15) + 1;
         currentB = Math.floor(Math.random() * 15) + 1;
@@ -216,11 +248,9 @@
           currentB = Math.floor(Math.random() * 8) + 2;
         }
       }
-
       correctAnswer = currentOp === '+' ? currentA + currentB :
                       currentOp === '-' ? currentA - currentB :
                       currentOp === '×' ? currentA * currentB : Math.floor(currentA / currentB);
-
       document.getElementById('question').textContent = `${currentA} ${currentOp} ${currentB} = ?`;
       document.getElementById('answer').value = '';
       document.getElementById('message').textContent = '';
@@ -233,13 +263,13 @@
     function checkAnswer() {
       const userAns = parseInt(document.getElementById('answer').value);
       if (isNaN(userAns)) return;
-
       let thisPoint = pointPerCorrect;
       if (currentMode === 'mixed') {
         thisPoint = (currentOp === '+' || currentOp === '-') ? 7 : (currentOp === '×' ? 10 : 15);
       }
-
       if (userAns === correctAnswer) {
+        // ===== 核心恢復機制：答對一題恢復 0.5% =====
+        catActualPower = Math.min(getTotalPower(), catActualPower + getTotalPower() * 0.005);
         gold += thisPoint;
         streak++;
         roundCorrect++;
@@ -250,29 +280,29 @@
         document.getElementById('cat').textContent = '😿';
         document.getElementById('message').innerHTML = `❌ 正確是 ${correctAnswer} 喵～`;
       }
-
       document.getElementById('gold').textContent = gold;
       document.getElementById('streak').textContent = streak;
       saveData();
       updateRoundStats();
+      updateAllPowerUI();
       setTimeout(newQuestion, 1100);
     }
 
-    function showShop() {
+    function showShop() { /* 原有不變 */ 
       document.getElementById('game-area').style.display = 'none';
       document.getElementById('shop').style.display = 'block';
       renderArmy();
       document.getElementById('shop-gold-value').textContent = gold;
     }
 
-    function openShopFromMenu() {
+    function openShopFromMenu() { /* 原有不變 */ 
       document.getElementById('mode-select').style.display = 'none';
       document.getElementById('shop').style.display = 'block';
       renderArmy();
       document.getElementById('shop-gold-value').textContent = gold;
     }
 
-    function buyCat(typeIndex) {
+    function buyCat(typeIndex) { /* 原有不變 */ 
       const cat = catTypes[typeIndex];
       if (gold < cat.cost) { alert('金幣不夠喵～多練幾題！'); return; }
       gold -= cat.cost;
@@ -285,31 +315,45 @@
       document.getElementById('shop-gold-value').textContent = gold;
     }
 
+    // ===== 全新魔王戰鬥（隨機聖物 + 永不陣亡）=====
     function quickBossFight() {
       const input = prompt('輸入魔王軍團戰力（預設 1200）：', '1200');
       if (!input) return;
       const bossPower = parseInt(input);
       if (isNaN(bossPower)) { alert('請輸入數字！'); return; }
-      const myPower = getTotalPower();
+
+      const myActual = getLegionActual();
+      const myMax = getLegionMax();
+
       let result = '';
-      if (myPower < bossPower) {
-        result = '😭 軍團敗北！損失大量貓咪！';
-        applyDamage(0.3 + Math.random() * 0.3);
-      } else {
-        result = '🎉 擊退魔王！+150 金幣！';
-        gold += 150;
+      if (myActual >= bossPower) {
+        result = '🎉 擊敗魔王軍團！';
+        const randomIndex = Math.floor(Math.random() * holyTreasures.length);
+        const item = holyTreasures[randomIndex];
+        treasureCounts[item.name]++;
+        result += `\n\n獲得【${item.name}】！戰力 +${item.power}（已擁有 ${treasureCounts[item.name]} 件）`;
+        gold += 300;
         document.getElementById('gold').textContent = gold;
-        const ratio = Math.max(0, 1 - (myPower - bossPower) / 2000);
-        const lossRate = 0.1 + ratio * 0.4;
-        result += `\n但損失 ${Math.round(lossRate*100)}% 貓咪！`;
-        applyDamage(lossRate);
+      } else {
+        result = '😭 軍團暫時敗退！';
+        const dmg = Math.floor((bossPower - myActual) * 0.6);
+        catActualPower = Math.max(0, catActualPower - dmg);
+        result += `\n損失戰力 ${dmg}（貓咪正在恢復中...）`;
       }
+
       saveData();
-      renderArmy();
-      alert(`魔王戰力：${bossPower}\n您的軍團戰力：${myPower}\n\n${result}`);
+      updateAllPowerUI();
+
+      let treasureList = Object.entries(treasureCounts)
+        .filter(([, cnt]) => cnt > 0)
+        .map(([name, cnt]) => `${name}×${cnt}`)
+        .join('　');
+      if (treasureList) result += `\n\n目前聖物：${treasureList}`;
+
+      alert(`魔王戰力：${bossPower}\n您的軍團戰力：${myActual} (Max ${myMax})\n\n${result}`);
     }
 
-    function applyDamage(rate) {
+    function applyDamage(rate) { /* 原有保留，未來若要用保留 */ 
       if (army.length === 0) return;
       army.forEach(cat => {
         const lose = Math.floor(cat.count * rate);
@@ -329,7 +373,7 @@
       document.getElementById('day').textContent = day;
       renderArmy();
       initScreen();
-      console.log('✅ V9 金幣系統載入完成');
+      console.log('✅ V10 聖物隨機堆疊 + 貓咪永不陣亡版載入完成！');
     };
   </script>
 </body>
