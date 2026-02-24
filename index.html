@@ -408,44 +408,50 @@
       document.getElementById('shop-gold-value').textContent = gold;
     }
 
-    function quickBossFight() {
-      const input = prompt('輸入魔王軍團戰力（預設 1200）：', '1200');
-      if (!input) return;
-      const bossPower = parseInt(input);
-      if (isNaN(bossPower)) {
-        alert('請輸入數字！');
-        return;
-      }
+  function quickBossFight() {
+  const input = prompt('輸入魔王軍團戰力（預設 1200）：', '1200');
+  if (!input) return;
+  const bossPower = parseInt(input);
+  if (isNaN(bossPower)) { alert('請輸入數字！'); return; }
 
-      const myActual = getLegionActual();
-      const myMax = getLegionMax();
+  const myActual = getLegionActual();
+  const myMax = getLegionMax();
 
-      document.getElementById('mode-select').style.display = 'none';
-      document.getElementById('game-area').style.display = 'none';
-      document.getElementById('shop').style.display = 'none';
-      document.getElementById('monster-attack').style.display = 'block';
+  document.getElementById('mode-select').style.display = 'none';
+  document.getElementById('game-area').style.display = 'none';
+  document.getElementById('shop').style.display = 'none';
+  document.getElementById('monster-attack').style.display = 'block';
 
-      document.getElementById('monster-power').textContent = bossPower;
-      document.getElementById('your-power').textContent = myActual;
+  document.getElementById('monster-power').textContent = bossPower;
+  document.getElementById('your-power').textContent = myActual;
 
-      let resultHTML = '';
-      if (myActual >= bossPower) {
-        resultHTML = '<span style="color:#2ecc71">🎉 擊敗魔王軍團！</span>';
-        const randomIndex = Math.floor(Math.random() * holyTreasures.length);
-        const item = holyTreasures[randomIndex];
-        treasureCounts[item.name] = (treasureCounts[item.name] || 0) + 1;
-        resultHTML += `<br><br>獲得【${item.name}】！ +${item.power} 戰力<br>已擁有 ${treasureCounts[item.name]} 件`;
-        gold += 300;
-      } else {
-        resultHTML = '<span style="color:#ef5350">😭 軍團暫時敗退！</span>';
-        const dmg = Math.floor((bossPower - myActual) * 0.6);
-        catActualPower = Math.max(0, catActualPower - dmg);
-        resultHTML += `<br>損失戰力 ${dmg}（貓咪恢復中...）`;
-      }
-      document.getElementById('battle-result').innerHTML = resultHTML;
-      saveData();
-      updateAllPowerUI();
-    }
+  let resultHTML = '';
+  let dmg = 0;
+
+  if (myActual >= bossPower) {
+    resultHTML = '<span style="color:#2ecc71">🎉 擊敗魔王軍團！</span>';
+    const randomIndex = Math.floor(Math.random() * holyTreasures.length);
+    const item = holyTreasures[randomIndex];
+    treasureCounts[item.name] = (treasureCounts[item.name] || 0) + 1;
+    resultHTML += `<br><br>獲得【${item.name}】！ +${item.power} 戰力<br>已擁有 ${treasureCounts[item.name]} 件`;
+    gold += 300;
+
+    // 贏了也扣一點戰力（疲勞消耗）
+    dmg = Math.floor(myMax * 0.08);  // 約 8% Max 戰力
+    resultHTML += `<br>戰鬥消耗：-${dmg} 戰力（貓咪有點累了...）`;
+  } else {
+    resultHTML = '<span style="color:#ef5350">😭 軍團暫時敗退！</span>';
+    dmg = Math.floor((bossPower - myActual) * 0.6);
+    resultHTML += `<br>戰鬥損傷：-${dmg} 戰力`;
+  }
+
+  // 統一扣血（贏輸都扣）
+  catActualPower = Math.max(0, catActualPower - dmg);
+
+  document.getElementById('battle-result').innerHTML = resultHTML;
+  saveData();
+  updateAllPowerUI();
+}
 
     function hideMonster() {
       document.getElementById('monster-attack').style.display = 'none';
